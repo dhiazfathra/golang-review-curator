@@ -1,0 +1,250 @@
+name: CI
+
+on:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: true
+
+env:
+  GO_VERSION: "1.26"
+
+jobs:
+  # ── Lint ──
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          args: --timeout=5m
+
+  # ── Test + Coverage ──
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      valkey:
+        image: valkey/valkey:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="valkey-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install go-junit-report
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
+      - name: Run tests with coverage
+        run: make test-report
+        env:
+          DATABASE_URL: postgres://test:test@localhost:5432/test?sslmode=disable
+          VALKEY_URL: localhost:6379
+          ENV: test
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+          retention-days: 5
+      - name: Check coverage threshold
+        run: make cover-check
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.out
+          slug: dhiazfathra/golang-clean-architecture
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # ── SQL Migration Validation ──
+  sql-validate:
+    name: SQL Validation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate migration filenames
+        run: |
+          ERRORS=0
+          for f in migrations/*.up.sql migrations/*.down.sql; do
+            [ -e "$f" ] || continue
+            base=$(basename "$f")
+            if ! echo "$base" | grep -qE '^[0-9]{14}_[a-z_]+\.(up|down)\.sql$'; then
+              echo "::error file=$f::Invalid migration name: $base (expected YYYYMMDDHHMMSS_name.up.sql)"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+          if [ $ERRORS -gt 0 ]; then exit 1; fi
+      - name: Validate migration pairs
+        run: |
+          ERRORS=0
+          for f in migrations/*.up.sql; do
+            [ -e "$f" ] || continue
+            down="${f%.up.sql}.down.sql"
+            if [ ! -f "$down" ]; then
+              echo "::warning file=$f::Missing down migration: $(basename "$down")"
+            fi
+          done
+      # - name: Check SQL syntax with pg_query
+      #   uses: actions/setup-go@v5
+      #   with:
+      #     go-version: ${{ env.GO_VERSION }}
+
+      # - name: Install and run pg_query SQL syntax check
+      #   run: |
+      #     # Write a small Go program that replicates pg_query_parse behavior
+      #     mkdir -p /tmp/pg_query_check
+      #     cat > /tmp/pg_query_check/main.go << 'EOF'
+      #     package main
+
+      #     import (
+      #       "fmt"
+      #       "io"
+      #       "os"
+      #       pg_query "github.com/pganalyze/pg_query_go/v6"
+      #     )
+
+      #     func main() {
+      #       input, err := io.ReadAll(os.Stdin)
+      #       if err != nil {
+      #         fmt.Fprintf(os.Stderr, "read error: %v\n", err)
+      #         os.Exit(1)
+      #       }
+      #       result, err := pg_query.ParseToJSON(string(input))
+      #       if err != nil {
+      #         fmt.Fprintf(os.Stderr, "%v\n", err)
+      #         os.Exit(1)
+      #       }
+      #       fmt.Println(result)
+      #     }
+      #     EOF
+      #     cat > /tmp/pg_query_check/go.mod << 'EOF'
+      #     module pg_query_check
+
+      #     go 1.21
+      #     EOF
+      #     cd /tmp/pg_query_check
+      #     go get github.com/pganalyze/pg_query_go/v6@latest
+      #     go build -o /usr/local/bin/pg_query_parse .
+
+      #     # Now validate all migration files
+      #     ERRORS=0
+      #     for f in $GITHUB_WORKSPACE/migrations/*.sql; do
+      #       if ! pg_query_parse < "$f" > /dev/null 2>&1; then
+      #         echo "::error file=$f::SQL syntax error in $(basename "$f")"
+      #         pg_query_parse < "$f" 2>&1 || true
+      #         ERRORS=$((ERRORS + 1))
+      #       fi
+      #     done
+      #     if [ $ERRORS -gt 0 ]; then exit 1; fi
+
+  # ── Security: govulncheck ──
+  vulncheck:
+    name: Vulnerability Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      - name: Run govulncheck
+        run: govulncheck ./...
+
+  # ── Security: gosec ──
+  gosec:
+    name: Security Scan (gosec)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run gosec (human-readable output)
+        uses: securego/gosec@v2.23.0
+        with:
+          args: -fmt text -severity medium ./...
+        continue-on-error: true # let the SARIF step always run
+
+      - name: Run gosec (SARIF for upload)
+        uses: securego/gosec@v2.23.0
+        with:
+          args: -fmt sarif -out gosec.sarif ./...
+        continue-on-error: true # prevent blocking SARIF upload
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: gosec.sarif
+
+  # ── Security: Dependency License Check ──
+  license-check:
+    name: License Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install go-licenses
+        run: go install github.com/google/go-licenses@latest
+      - name: Check licenses
+        run: go-licenses check ./... --disallowed_types=forbidden,restricted
+        continue-on-error: true # warn only; tighten after initial baseline
+
+  # ── Build Verification ──
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Build
+        run: go build -o /dev/null ./cmd/server/...
+      - name: Vet
+        run: go vet ./...
