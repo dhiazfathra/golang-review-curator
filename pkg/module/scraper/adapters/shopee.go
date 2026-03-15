@@ -1,0 +1,82 @@
+package adapters
+
+import (
+	"context"
+	"encoding/json"
+	"regexp"
+	"time"
+
+	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/proto"
+	"review-curator/pkg/module/scraper"
+	"review-curator/pkg/platform/selector"
+)
+
+var shopeeReviewAPIPattern = regexp.MustCompile(`shopee\.co\.id/api/v\d+/item/get_ratings`)
+
+type ShopeeAdapter struct {
+	BaseScraper
+}
+
+func (a *ShopeeAdapter) Platform() scraper.Platform { return scraper.PlatformShopee }
+
+func (a *ShopeeAdapter) FetchReviews(ctx context.Context, job scraper.CrawlJob) ([]scraper.CrawlResult, error) {
+	page, release, proxyURL, err := a.NavigateWithRetry(ctx, job.ProductURL)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		release()
+		a.Rotator.ReportSuccess(proxyURL)
+	}()
+
+	var results []scraper.CrawlResult
+
+	wait := page.EachEvent(func(e *proto.NetworkResponseReceived) {
+		if !shopeeReviewAPIPattern.MatchString(e.Response.URL) {
+			return
+		}
+		body, err := page.GetResource(e.Response.URL)
+		if err != nil {
+			return
+		}
+		raw, _ := json.Marshal(map[string]any{
+			"source":   "xhr",
+			"url":      e.Response.URL,
+			"body":     string(body),
+			"platform": scraper.PlatformShopee,
+		})
+		results = append(results, scraper.CrawlResult{
+			Platform:   scraper.PlatformShopee,
+			ProductURL: job.ProductURL,
+			RawJSON:    raw,
+			CrawledAt:  time.Now(),
+		})
+	})
+	defer wait()
+
+	_ = page.WaitIdle(3e9)
+
+	if len(results) == 0 {
+		results, err = a.extractFromDOM(ctx, page, job)
+	}
+	return results, err
+}
+
+func (a *ShopeeAdapter) extractFromDOM(ctx context.Context, page *rod.Page, job scraper.CrawlJob) ([]scraper.CrawlResult, error) {
+	e := &selector.RodExtractor{Page: page}
+	fields := []string{"review_text", "rating", "author_name", "author_id", "reviewed_at"}
+	data := make(map[string]string, len(fields))
+	for _, f := range fields {
+		cfg := a.Selectors.Get(string(scraper.PlatformShopee), f)
+		val, _ := selector.ExtractField(e, cfg)
+		data[f] = val
+	}
+	raw, _ := json.Marshal(map[string]any{"source": "dom", "fields": data})
+	return []scraper.CrawlResult{{
+		Platform:   scraper.PlatformShopee,
+		ProductURL: job.ProductURL,
+		RawJSON:    raw,
+		CrawledAt:  time.Now(),
+	}}, nil
+}

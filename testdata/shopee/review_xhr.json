@@ -1,0 +1,35 @@
+{
+  "data": {
+    "ratings": [
+      {
+        "rating_star": 5,
+        "author_username": "shopuser123",
+        "author_id": "1234567890",
+        "comment": "Produk sesuai deskripsi, packing aman, pengiriman cepat!",
+        "review_time": 1704067200,
+        "product_items": []
+      },
+      {
+        "rating_star": 4,
+        "author_username": "buyer_abc",
+        "author_id": "0987654321",
+        "comment": "Barang baik, sedikit kerusakan pada packaging tapi produk oke",
+        "review_time": 1703980800,
+        "product_items": []
+      },
+      {
+        "rating_star": 5,
+        "author_username": "trusted_user",
+        "author_id": "1122334455",
+        "comment": "Sangat recommended! Seller responsif dan barang berkualitas",
+        "review_time": 1703894400,
+        "product_items": []
+      }
+    ],
+    "total_count": 3,
+    "page_size": 50,
+    "cur_page": 1
+  },
+  "error": null,
+  "error_msg": ""
+}

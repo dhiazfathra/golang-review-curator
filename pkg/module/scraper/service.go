@@ -59,6 +59,10 @@ func (s *CrawlService) MarkFailed(ctx context.Context, jobID, errMsg string) err
 	return s.repo.UpdateJobStatus(ctx, jobID, "failed", &msg)
 }
 
+func (s *CrawlService) UpdateJobStatus(ctx context.Context, jobID, status string, errMsg *string) error {
+	return s.repo.UpdateJobStatus(ctx, jobID, status, errMsg)
+}
+
 func (s *CrawlService) GetJob(ctx context.Context, jobID string) (*CrawlJob, error) {
 	return s.repo.GetJobByID(ctx, jobID)
 }
