@@ -1,0 +1,35 @@
+{
+  "data": {
+    "reviews": [
+      {
+        "rating": 5,
+        "authorName": "blibliuser123",
+        "authorId": "9876543210",
+        "reviewText": "Produk berkualitas, pengiriman cepat, seller responsif!",
+        "reviewDate": "2024-01-01T00:00:00Z",
+        "helpfulCount": 15
+      },
+      {
+        "rating": 4,
+        "authorName": "shopper_xyz",
+        "authorId": "0123456789",
+        "reviewText": "Barang sesuai gambar, tapi packaging bisa lebih baik",
+        "reviewDate": "2024-01-02T00:00:00Z",
+        "helpfulCount": 8
+      },
+      {
+        "rating": 5,
+        "authorName": "trusted_buyer",
+        "authorId": "1122334466",
+        "reviewText": "Sangat memuaskan! akan repeat order lagi",
+        "reviewDate": "2024-01-03T00:00:00Z",
+        "helpfulCount": 22
+      }
+    ],
+    "totalCount": 3,
+    "pageSize": 20,
+    "currentPage": 1
+  },
+  "error": null,
+  "errorMessage": ""
+}

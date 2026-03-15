@@ -20,7 +20,7 @@ func NewCrawlHandler(service *scraper.CrawlService, registry *adapters.Registry)
 	return &CrawlHandler{service: service, registry: registry}
 }
 
-func (h *CrawlHandler) Handle(ctx context.Context, t *asynq.Task) error {
+func (h *CrawlHandler) ProcessTask(ctx context.Context, t *asynq.Task) error {
 	var payload struct {
 		JobID string `json:"job_id"`
 	}
