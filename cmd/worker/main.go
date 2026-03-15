@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 	"review-curator/pkg/module/product"
 	"review-curator/pkg/module/scraper"
 	"review-curator/pkg/module/scraper/adapters"
@@ -17,6 +18,7 @@ import (
 	"review-curator/pkg/platform/captcha"
 	"review-curator/pkg/platform/config"
 	"review-curator/pkg/platform/database"
+	"review-curator/pkg/platform/observability"
 	"review-curator/pkg/platform/proxy"
 	"review-curator/pkg/platform/queue"
 	"review-curator/pkg/platform/ratelimit"
@@ -25,7 +27,12 @@ import (
 
 func main() {
 	cfg := config.MustLoad()
+	observability.InitLogger(false)
+
 	db := database.MustConnect(cfg.DatabaseURL)
+
+	rdb := redis.NewClient(&redis.Options{Addr: cfg.RedisURL})
+	sessionStore := browser.NewSessionStore(rdb)
 
 	proxySlots := proxy.LoadFromConfig(cfg.ProxyURLs)
 	rotator := proxy.NewRotator(proxySlots)
@@ -49,7 +56,7 @@ func main() {
 	defer cancel()
 	selectorStore.StartHotReload(ctx)
 
-	registry := adapters.NewRegistry(pool, rotator, captchaDispatcher, selectorStore, limiter)
+	registry := adapters.NewRegistry(pool, rotator, captchaDispatcher, selectorStore, limiter, sessionStore)
 
 	repo := scraper.NewRepository(db)
 	productRepo := product.NewRepository(db)

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/proto"
 	"review-curator/pkg/module/scraper"
 	"review-curator/pkg/platform/browser"
 	"review-curator/pkg/platform/captcha"
@@ -27,6 +28,7 @@ type BaseScraper struct {
 	Captcha     captcha.CaptchaResolver
 	Selectors   *selector.SelectorStore
 	Limiter     *ratelimit.Limiter
+	Sessions    *browser.SessionStore
 }
 
 func (b *BaseScraper) NavigateWithRetry(ctx context.Context, rawURL string) (*rod.Page, func(), string, error) {
@@ -34,12 +36,19 @@ func (b *BaseScraper) NavigateWithRetry(ctx context.Context, rawURL string) (*ro
 	defer span.End()
 
 	proxyURL, _ := b.Rotator.Next()
+	platform := b.platformFromURL(rawURL)
 
 	page, release, err := b.BrowserPool.Acquire(ctx)
 	if err != nil {
 		b.Rotator.ReportFailure(proxyURL)
 		span.RecordError(err)
 		return nil, nil, proxyURL, fmt.Errorf("base: acquire page: %w", err)
+	}
+
+	if b.Sessions != nil {
+		if cookies, err := b.Sessions.Load(ctx, platform, proxyURL); err == nil && len(cookies) > 0 {
+			_ = page.SetCookies(cookies)
+		}
 	}
 
 	u, _ := url.Parse(rawURL)
@@ -68,7 +77,29 @@ func (b *BaseScraper) NavigateWithRetry(ctx context.Context, rawURL string) (*ro
 		return nil, nil, proxyURL, fmt.Errorf("base: captcha: %w", err)
 	}
 
-	return page, release, proxyURL, nil
+	releaseWithSave := func() {
+		if b.Sessions != nil {
+			if rawCookies, err := page.Cookies(nil); err == nil {
+				cookies := make([]*proto.NetworkCookieParam, len(rawCookies))
+				for i, c := range rawCookies {
+					cookies[i] = &proto.NetworkCookieParam{
+						Name:     c.Name,
+						Value:    c.Value,
+						Domain:   c.Domain,
+						Path:     c.Path,
+						Expires:  c.Expires,
+						HTTPOnly: c.HTTPOnly,
+						Secure:   c.Secure,
+						SameSite: c.SameSite,
+					}
+				}
+				_ = b.Sessions.Save(ctx, platform, proxyURL, cookies)
+			}
+		}
+		release()
+	}
+
+	return page, releaseWithSave, proxyURL, nil
 }
 
 func (b *BaseScraper) resolveCaptchaIfPresent(ctx context.Context, page *rod.Page, pageURL string) error {
@@ -151,4 +182,18 @@ func (b *BaseScraper) submitCaptchaAnswer(page *rod.Page, answer string) error {
 		return err
 	}
 	return el.Input(answer)
+}
+
+func (b *BaseScraper) platformFromURL(rawURL string) string {
+	u, _ := url.Parse(rawURL)
+	switch {
+	case strings.Contains(u.Host, "shopee"):
+		return "shopee"
+	case strings.Contains(u.Host, "tokopedia"):
+		return "tokopedia"
+	case strings.Contains(u.Host, "blibli"):
+		return "blibli"
+	default:
+		return "unknown"
+	}
 }

@@ -19,6 +19,7 @@ func NewRegistry(
 	captchaResolver captcha.CaptchaResolver,
 	selectorStore *selector.SelectorStore,
 	limiter *ratelimit.Limiter,
+	sessionStore *browser.SessionStore,
 ) *Registry {
 	base := BaseScraper{
 		BrowserPool: pool,
@@ -26,6 +27,7 @@ func NewRegistry(
 		Captcha:     captchaResolver,
 		Selectors:   selectorStore,
 		Limiter:     limiter,
+		Sessions:    sessionStore,
 	}
 	return &Registry{
 		adapters: map[scraper.Platform]Adapter{
