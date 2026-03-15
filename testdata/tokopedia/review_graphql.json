@@ -1,0 +1,47 @@
+{
+  "data": {
+    "ProductRevGetProductReviewList": {
+      "data": {
+        "list": [
+          {
+            "reviewId": "rev_1001",
+            "userId": "12345678",
+            "userName": "tokped_user_001",
+            "rating": 5,
+            "reviewText": "Produk sama seperti foto, packing aman, pengiriman cepat! Recomend seller ini",
+            "reviewTime": "2024-01-15T10:30:00Z",
+            "productVariant": "Hitam - L",
+            "upvotes": 15,
+            "downvotes": 0
+          },
+          {
+            "reviewId": "rev_1002",
+            "userId": "87654321",
+            "userName": "pembeli_setia",
+            "rating": 4,
+            "reviewText": "Barang sampai dengan baik, kualitas oke untuk harga segini",
+            "reviewTime": "2024-01-14T14:22:00Z",
+            "productVariant": "Putih - M",
+            "upvotes": 8,
+            "downvotes": 1
+          },
+          {
+            "reviewId": "rev_1003",
+            "userId": "11223344",
+            "userName": "shopaholic_id",
+            "rating": 5,
+            "reviewText": "第二次在这里买了，质量还是很好，物流也快！",
+            "reviewTime": "2024-01-13T09:15:00Z",
+            "productVariant": "Merah - L",
+            "upvotes": 22,
+            "downvotes": 0
+          }
+        ],
+        "totalReview": 200,
+        "totalPage": 10,
+        "currentPage": 1
+      }
+    }
+  },
+  "errors": null
+}
