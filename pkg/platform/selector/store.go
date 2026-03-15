@@ -43,6 +43,15 @@ func (s *SelectorStore) Get(platform, field string) SelectorConfig {
 	return m[platform+":"+field]
 }
 
+func (s *SelectorStore) All() []SelectorConfig {
+	m := *(*map[string]SelectorConfig)(atomic.LoadPointer(&s.current))
+	out := make([]SelectorConfig, 0, len(m))
+	for _, v := range m {
+		out = append(out, v)
+	}
+	return out
+}
+
 func (s *SelectorStore) StartHotReload(ctx context.Context) {
 	go func() {
 		t := time.NewTicker(60 * time.Second)
