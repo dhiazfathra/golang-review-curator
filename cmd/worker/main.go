@@ -6,8 +6,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/hibiken/asynq"
+	"review-curator/pkg/module/product"
 	"review-curator/pkg/module/scraper"
 	"review-curator/pkg/module/scraper/adapters"
 	"review-curator/pkg/module/scraper/handler"
@@ -50,10 +52,14 @@ func main() {
 	registry := adapters.NewRegistry(pool, rotator, captchaDispatcher, selectorStore, limiter)
 
 	repo := scraper.NewRepository(db)
+	productRepo := product.NewRepository(db)
 	queueClient := queue.NewClient(cfg.RedisURL)
 	defer func() { _ = queueClient.Close() }()
 	crawlService := scraper.NewCrawlService(repo, queueClient)
 	crawlHandler := handler.NewCrawlHandler(crawlService, registry)
+
+	scheduler := scraper.NewScheduler(crawlService, productRepo, 6*time.Hour)
+	scheduler.Start(ctx)
 
 	srv := queue.NewServer(cfg.RedisURL, cfg.CrawlQueueConc, cfg.NormQueueConc)
 	mux := asynq.NewServeMux()
