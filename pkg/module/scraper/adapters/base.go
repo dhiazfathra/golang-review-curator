@@ -10,6 +10,7 @@ import (
 	"review-curator/pkg/module/scraper"
 	"review-curator/pkg/platform/browser"
 	"review-curator/pkg/platform/captcha"
+	"review-curator/pkg/platform/observability"
 	"review-curator/pkg/platform/proxy"
 	"review-curator/pkg/platform/ratelimit"
 	"review-curator/pkg/platform/selector"
@@ -29,11 +30,15 @@ type BaseScraper struct {
 }
 
 func (b *BaseScraper) NavigateWithRetry(ctx context.Context, rawURL string) (*rod.Page, func(), string, error) {
+	ctx, span := observability.StartSpan(ctx, "scraper.navigate")
+	defer span.End()
+
 	proxyURL, _ := b.Rotator.Next()
 
 	page, release, err := b.BrowserPool.Acquire(ctx)
 	if err != nil {
 		b.Rotator.ReportFailure(proxyURL)
+		span.RecordError(err)
 		return nil, nil, proxyURL, fmt.Errorf("base: acquire page: %w", err)
 	}
 
@@ -46,6 +51,7 @@ func (b *BaseScraper) NavigateWithRetry(ctx context.Context, rawURL string) (*ro
 	if err := page.Navigate(rawURL); err != nil {
 		release()
 		b.Rotator.ReportFailure(proxyURL)
+		span.RecordError(err)
 		return nil, nil, proxyURL, fmt.Errorf("base: navigate %s: %w", rawURL, err)
 	}
 	if err := page.WaitLoad(); err != nil {
@@ -54,7 +60,10 @@ func (b *BaseScraper) NavigateWithRetry(ctx context.Context, rawURL string) (*ro
 		return nil, nil, proxyURL, fmt.Errorf("base: wait load: %w", err)
 	}
 
-	if err := b.resolveCaptchaIfPresent(ctx, page, rawURL); err != nil {
+	captchaCtx, captchaSpan := observability.StartSpan(ctx, "scraper.captcha_resolve")
+	err = b.resolveCaptchaIfPresent(captchaCtx, page, rawURL)
+	captchaSpan.End()
+	if err != nil {
 		release()
 		return nil, nil, proxyURL, fmt.Errorf("base: captcha: %w", err)
 	}
