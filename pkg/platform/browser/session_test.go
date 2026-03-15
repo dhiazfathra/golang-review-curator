@@ -4,11 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"review-curator/pkg/platform/browser"
+
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"review-curator/pkg/platform/browser"
 )
 
 func TestSessionStore_SaveLoad(t *testing.T) {

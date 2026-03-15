@@ -8,8 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"review-curator/pkg/module/normaliser"
 	"review-curator/pkg/module/product"
 	"review-curator/pkg/module/review"
@@ -19,6 +17,9 @@ import (
 	"review-curator/pkg/platform/observability"
 	"review-curator/pkg/platform/queue"
 	"review-curator/pkg/platform/selector"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {

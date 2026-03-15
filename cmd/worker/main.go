@@ -8,8 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hibiken/asynq"
-	"github.com/redis/go-redis/v9"
 	"review-curator/pkg/module/normaliser"
 	"review-curator/pkg/module/product"
 	"review-curator/pkg/module/scraper"
@@ -24,6 +22,9 @@ import (
 	"review-curator/pkg/platform/queue"
 	"review-curator/pkg/platform/ratelimit"
 	"review-curator/pkg/platform/selector"
+
+	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 )
 
 type smokeGetterWrapper struct {

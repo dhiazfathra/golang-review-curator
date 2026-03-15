@@ -1,4 +1,4 @@
-.PHONY: infra-up infra-down migrate migrate-down build test lint server-run worker-run
+.PHONY: infra-up infra-down migrate migrate-down build test test-race test-cover lint server-run worker-run gen browser-smoke
 
 infra-up:
 	docker compose -f deployments/docker-compose.yaml up -d
@@ -18,8 +18,20 @@ build:
 test:
 	go test ./...
 
+test-race:
+	go test -race ./...
+
+test-cover:
+	go test -cover ./...
+
 lint:
 	golangci-lint run ./...
+
+gen:
+	go generate ./...
+
+browser-smoke:
+	go test -tags integration ./pkg/platform/browser/... -run TestBrowserSmoke -v
 
 server-run:
 	go run ./cmd/server/...

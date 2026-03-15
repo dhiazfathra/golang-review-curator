@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/labstack/echo/v4"
 	"review-curator/pkg/platform/database"
+
+	"github.com/labstack/echo/v4"
 )
 
 type Handler struct{ service *Service }

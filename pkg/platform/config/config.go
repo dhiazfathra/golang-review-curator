@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config holds all application configuration.
 type Config struct {
 	DatabaseURL     string   `mapstructure:"DATABASE_URL"`
 	RedisURL        string   `mapstructure:"REDIS_URL"`
@@ -17,6 +18,7 @@ type Config struct {
 	RateLimitPerSec float64  `mapstructure:"RATE_LIMIT_PER_SEC"`
 }
 
+// MustLoad loads configuration from .env file and environment variables.
 func MustLoad() *Config {
 	viper.AutomaticEnv()
 	viper.SetConfigFile(".env")

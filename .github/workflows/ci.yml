@@ -7,7 +7,7 @@ on:
         required: true
 
 env:
-  GO_VERSION: "1.26"
+  GO_VERSION: "1.22"
 
 jobs:
   # ── Lint ──
@@ -47,12 +47,12 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-      valkey:
-        image: valkey/valkey:8
+      redis:
+        image: redis:7-alpine
         ports:
-          - 6379:6379
+          - "6379:6379"
         options: >-
-          --health-cmd="valkey-cli ping"
+          --health-cmd="redis-cli ping"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -67,7 +67,7 @@ jobs:
         run: make test-report
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test?sslmode=disable
-          VALKEY_URL: localhost:6379
+          REDIS_URL: redis://localhost:6379/0
           ENV: test
       - name: Upload coverage
         uses: actions/upload-artifact@v4

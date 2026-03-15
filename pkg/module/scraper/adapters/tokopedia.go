@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/proto"
 	"review-curator/pkg/module/scraper"
 	"review-curator/pkg/platform/selector"
+
+	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/proto"
 )
 
 var tokopediaGraphQLPattern = regexp.MustCompile(`tokopedia\.com/graphql`)

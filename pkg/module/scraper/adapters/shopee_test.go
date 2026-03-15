@@ -7,9 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"review-curator/pkg/module/scraper"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"review-curator/pkg/module/scraper"
 )
 
 func loadFixture(t *testing.T, name string) []byte {

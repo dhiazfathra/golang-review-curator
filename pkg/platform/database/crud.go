@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// Page holds pagination parameters.
 type Page struct {
 	Limit   int
 	Offset  int
@@ -15,6 +16,7 @@ type Page struct {
 	SortDir string
 }
 
+// PaginatedSelect performs a paginated query with count.
 func PaginatedSelect[T any](ctx context.Context, db *sqlx.DB, baseQuery string, args []any, p Page) ([]T, int, error) {
 	var total int
 	countQ := "SELECT COUNT(*) FROM (" + baseQuery + ") _c"
@@ -39,6 +41,7 @@ func PaginatedSelect[T any](ctx context.Context, db *sqlx.DB, baseQuery string, 
 	return rows, total, nil
 }
 
+// UpsertOne performs a single row upsert operation.
 func UpsertOne(ctx context.Context, db *sqlx.DB, query string, arg any) error {
 	_, err := db.NamedExecContext(ctx, query, arg)
 	return err

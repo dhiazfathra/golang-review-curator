@@ -9,9 +9,10 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"review-curator/pkg/module/scraper"
+
 	"github.com/google/uuid"
 	"github.com/pemistahl/lingua-go"
-	"review-curator/pkg/module/scraper"
 )
 
 type NormaliserService struct {
@@ -210,11 +211,50 @@ func (s *NormaliserService) detectLanguage(text string) string {
 	if !ok {
 		return "unknown"
 	}
+	//nolint:exhaustive
 	switch lang {
 	case lingua.Indonesian:
 		return "id"
 	case lingua.English:
 		return "en"
+	case lingua.Chinese:
+		return "zh"
+	case lingua.Japanese:
+		return "ja"
+	case lingua.Korean:
+		return "ko"
+	case lingua.Spanish:
+		return "es"
+	case lingua.Portuguese:
+		return "pt"
+	case lingua.French:
+		return "fr"
+	case lingua.German:
+		return "de"
+	case lingua.Thai:
+		return "th"
+	case lingua.Vietnamese:
+		return "vi"
+	case lingua.Malay:
+		return "ms"
+	case lingua.Arabic:
+		return "ar"
+	case lingua.Hindi:
+		return "hi"
+	case lingua.Russian:
+		return "ru"
+	case lingua.Italian:
+		return "it"
+	case lingua.Dutch:
+		return "nl"
+	case lingua.Polish:
+		return "pl"
+	case lingua.Turkish:
+		return "tr"
+	case lingua.Ukrainian:
+		return "uk"
+	case lingua.Unknown:
+		return "unknown"
 	default:
 		return "unknown"
 	}

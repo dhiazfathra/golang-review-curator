@@ -5,9 +5,10 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
+// MustConnect connects to the database or panics.
 func MustConnect(dsn string) *sqlx.DB {
 	db, err := sqlx.Connect("postgres", dsn)
 	if err != nil {
@@ -19,6 +20,7 @@ func MustConnect(dsn string) *sqlx.DB {
 	return db
 }
 
+// HealthCheck pings the database to verify connectivity.
 func HealthCheck(ctx context.Context, db *sqlx.DB) error {
 	return db.PingContext(ctx)
 }

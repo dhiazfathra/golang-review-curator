@@ -3,8 +3,9 @@ package proxy_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"review-curator/pkg/platform/proxy"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRotator_CircuitBreaker(t *testing.T) {

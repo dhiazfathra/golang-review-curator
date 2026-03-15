@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// ErrNoProxiesAvailable is returned when no healthy proxies are available.
 var ErrNoProxiesAvailable = errors.New("proxy: no healthy proxies available")
 
 type proxySlot struct {
@@ -22,16 +23,19 @@ func (s *proxySlot) isAvailable() bool {
 	return time.Now().After(s.quarantined)
 }
 
+// Rotator manages proxy rotation with health tracking.
 type Rotator struct {
 	mu    sync.Mutex
 	slots []*proxySlot
 	idx   int
 }
 
+// NewRotator creates a new proxy rotator.
 func NewRotator(slots []*proxySlot) *Rotator {
 	return &Rotator{slots: slots}
 }
 
+// Next returns the next available proxy URL.
 func (r *Rotator) Next() (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -54,6 +58,7 @@ func (r *Rotator) Next() (string, error) {
 	return best.URL, ErrNoProxiesAvailable
 }
 
+// ReportSuccess marks a proxy as successful.
 func (r *Rotator) ReportSuccess(proxyURL string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -69,6 +74,7 @@ func (r *Rotator) ReportSuccess(proxyURL string) {
 	}
 }
 
+// ReportFailure marks a proxy as failed.
 func (r *Rotator) ReportFailure(proxyURL string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

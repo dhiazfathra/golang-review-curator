@@ -12,15 +12,18 @@ import (
 
 const twoCaptchaBase = "https://2captcha.com"
 
+// TwoCaptcha is a captcha solver using the 2captcha.com API.
 type TwoCaptcha struct {
 	apiKey string
 	client *http.Client
 }
 
+// NewTwoCaptcha creates a new TwoCaptcha solver.
 func NewTwoCaptcha(apiKey string) *TwoCaptcha {
 	return &TwoCaptcha{apiKey: apiKey, client: &http.Client{Timeout: 120 * time.Second}}
 }
 
+// SolveImage solves an image captcha using the 2Captcha API.
 func (t *TwoCaptcha) SolveImage(ctx context.Context, base64img string) (string, error) {
 	taskID, err := t.submitTask(ctx, url.Values{
 		"key":    {t.apiKey},
@@ -34,6 +37,7 @@ func (t *TwoCaptcha) SolveImage(ctx context.Context, base64img string) (string, 
 	return t.pollResult(ctx, taskID)
 }
 
+// SolveRecaptchaV2 solves a reCAPTCHA v2 challenge using the 2Captcha API.
 func (t *TwoCaptcha) SolveRecaptchaV2(ctx context.Context, siteKey, pageURL string) (string, error) {
 	taskID, err := t.submitTask(ctx, url.Values{
 		"key":       {t.apiKey},
@@ -48,6 +52,7 @@ func (t *TwoCaptcha) SolveRecaptchaV2(ctx context.Context, siteKey, pageURL stri
 	return t.pollResult(ctx, taskID)
 }
 
+// SolveRecaptchaV3 solves a reCAPTCHA v3 challenge using the 2Captcha API.
 func (t *TwoCaptcha) SolveRecaptchaV3(ctx context.Context, siteKey, pageURL, action string) (string, error) {
 	taskID, err := t.submitTask(ctx, url.Values{
 		"key":       {t.apiKey},
@@ -64,7 +69,7 @@ func (t *TwoCaptcha) SolveRecaptchaV3(ctx context.Context, siteKey, pageURL, act
 	return t.pollResult(ctx, taskID)
 }
 
-func (t *TwoCaptcha) submitTask(ctx context.Context, params url.Values) (string, error) {
+func (t *TwoCaptcha) submitTask(_ context.Context, params url.Values) (string, error) {
 	resp, err := t.client.PostForm(twoCaptchaBase+"/in.php", params)
 	if err != nil {
 		return "", fmt.Errorf("2captcha submit: %w", err)

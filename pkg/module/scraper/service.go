@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"review-curator/pkg/platform/database"
 	"review-curator/pkg/platform/queue"
+
+	"github.com/google/uuid"
 )
 
 type CrawlService struct {

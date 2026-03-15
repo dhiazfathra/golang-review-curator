@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jmoiron/sqlx"
 	"review-curator/pkg/platform/database"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Repository interface {

@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"review-curator/pkg/module/scraper"
 	"review-curator/pkg/module/scraper/adapters"
+
+	"github.com/hibiken/asynq"
 )
 
 type CrawlHandler struct {

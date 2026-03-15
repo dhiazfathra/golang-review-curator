@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
 	"review-curator/pkg/platform/database"
 	"review-curator/pkg/platform/selector"
+
+	"github.com/labstack/echo/v4"
 )
 
 type APIHandler struct {

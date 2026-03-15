@@ -5,9 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"review-curator/pkg/platform/captcha"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"review-curator/pkg/platform/captcha"
 )
 
 type mockResolver struct {

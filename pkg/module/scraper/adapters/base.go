@@ -6,8 +6,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/proto"
 	"review-curator/pkg/module/scraper"
 	"review-curator/pkg/platform/browser"
 	"review-curator/pkg/platform/captcha"
@@ -15,6 +13,9 @@ import (
 	"review-curator/pkg/platform/proxy"
 	"review-curator/pkg/platform/ratelimit"
 	"review-curator/pkg/platform/selector"
+
+	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/proto"
 )
 
 type Adapter interface {

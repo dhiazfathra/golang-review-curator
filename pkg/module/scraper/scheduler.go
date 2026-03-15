@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"review-curator/pkg/module/product"
 	"review-curator/pkg/platform/database"
+
+	"github.com/rs/zerolog/log"
 )
 
 const defaultReCrawlInterval = 6 * time.Hour

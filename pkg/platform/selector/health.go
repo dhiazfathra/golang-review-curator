@@ -18,6 +18,7 @@ var extractionFailures = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help: "Extraction failures after all fallback rules exhausted.",
 }, []string{"platform", "field"})
 
+// Extractor defines methods for extracting content from HTML pages.
 type Extractor interface {
 	Element(selector string) (string, bool)
 	XPathElement(xpath string) (string, bool)
@@ -32,6 +33,8 @@ func ExtractField(e Extractor, cfg SelectorConfig) (string, bool) {
 			val, ok = e.Element(rule.Value)
 		case RuleTypeXPath:
 			val, ok = e.XPathElement(rule.Value)
+		case RuleTypeJSONPath, RuleTypeRegex:
+			return "", false
 		}
 		if ok && val != "" {
 			extractionByRule.WithLabelValues(cfg.Platform, cfg.Field, strconv.Itoa(i)).Inc()

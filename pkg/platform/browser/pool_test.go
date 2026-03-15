@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"review-curator/pkg/platform/browser"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestPool_AcquireRelease(t *testing.T) {

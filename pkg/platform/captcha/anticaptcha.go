@@ -11,15 +11,18 @@ import (
 
 const antiCaptchaBase = "https://api.anti-captcha.com"
 
+// AntiCaptcha is a captcha solver using the anti-captcha.com API.
 type AntiCaptcha struct {
 	apiKey string
 	client *http.Client
 }
 
+// NewAntiCaptcha creates a new AntiCaptcha solver.
 func NewAntiCaptcha(apiKey string) *AntiCaptcha {
 	return &AntiCaptcha{apiKey: apiKey, client: &http.Client{Timeout: 120 * time.Second}}
 }
 
+// SolveImage solves an image captcha using the Anti-Captcha API.
 func (a *AntiCaptcha) SolveImage(ctx context.Context, base64img string) (string, error) {
 	return a.solve(ctx, map[string]any{
 		"clientKey": a.apiKey,
@@ -27,6 +30,7 @@ func (a *AntiCaptcha) SolveImage(ctx context.Context, base64img string) (string,
 	})
 }
 
+// SolveRecaptchaV2 solves a reCAPTCHA v2 challenge using the Anti-Captcha API.
 func (a *AntiCaptcha) SolveRecaptchaV2(ctx context.Context, siteKey, pageURL string) (string, error) {
 	return a.solve(ctx, map[string]any{
 		"clientKey": a.apiKey,
@@ -38,6 +42,7 @@ func (a *AntiCaptcha) SolveRecaptchaV2(ctx context.Context, siteKey, pageURL str
 	})
 }
 
+// SolveRecaptchaV3 solves a reCAPTCHA v3 challenge using the Anti-Captcha API.
 func (a *AntiCaptcha) SolveRecaptchaV3(ctx context.Context, siteKey, pageURL, action string) (string, error) {
 	return a.solve(ctx, map[string]any{
 		"clientKey": a.apiKey,

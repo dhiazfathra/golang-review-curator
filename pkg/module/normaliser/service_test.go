@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	"review-curator/pkg/module/scraper"
+
 	"github.com/pemistahl/lingua-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"review-curator/pkg/module/scraper"
 )
 
 func TestExtractShopeeXHR(t *testing.T) {
