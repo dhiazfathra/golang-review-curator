@@ -16,7 +16,7 @@ func NewNormaliserHandler(service *NormaliserService) *NormaliserHandler {
 	return &NormaliserHandler{service: service}
 }
 
-func (h *NormaliserHandler) Handle(ctx context.Context, t *asynq.Task) error {
+func (h *NormaliserHandler) ProcessTask(ctx context.Context, t *asynq.Task) error {
 	var payload struct {
 		RawReviewID string `json:"raw_review_id"`
 	}

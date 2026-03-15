@@ -10,6 +10,7 @@ import (
 
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
+	"review-curator/pkg/module/normaliser"
 	"review-curator/pkg/module/product"
 	"review-curator/pkg/module/scraper"
 	"review-curator/pkg/module/scraper/adapters"
@@ -24,6 +25,14 @@ import (
 	"review-curator/pkg/platform/ratelimit"
 	"review-curator/pkg/platform/selector"
 )
+
+type smokeGetterWrapper struct {
+	registry *adapters.Registry
+}
+
+func (s *smokeGetterWrapper) Get(platform scraper.Platform) (any, bool) {
+	return s.registry.Get(platform)
+}
 
 func main() {
 	cfg := config.MustLoad()
@@ -59,19 +68,41 @@ func main() {
 	registry := adapters.NewRegistry(pool, rotator, captchaDispatcher, selectorStore, limiter, sessionStore)
 
 	repo := scraper.NewRepository(db)
+	normRepo := normaliser.NewRepository(db)
 	productRepo := product.NewRepository(db)
 	queueClient := queue.NewClient(cfg.RedisURL)
 	defer func() { _ = queueClient.Close() }()
+
 	crawlService := scraper.NewCrawlService(repo, queueClient)
 	crawlHandler := handler.NewCrawlHandler(crawlService, registry)
+
+	smokeTest := scraper.NewSmokeTest(&smokeGetterWrapper{registry: registry}, repo)
+	smokeHandler := scraper.NewSmokeHandler(smokeTest)
+
+	normService := normaliser.NewNormaliserService(repo, normRepo)
+	normHandler := normaliser.NewNormaliserHandler(normService)
 
 	scheduler := scraper.NewScheduler(crawlService, productRepo, 6*time.Hour)
 	scheduler.Start(ctx)
 
+	asynqScheduler := asynq.NewScheduler(
+		asynq.RedisClientOpt{Addr: cfg.RedisURL},
+		&asynq.SchedulerOpts{Location: mustLoadLocation("Asia/Jakarta")},
+	)
+	if _, err := asynqScheduler.Register("0 2 * * 1",
+		asynq.NewTask(scraper.TaskSmokeRunAll, nil),
+		asynq.Queue("crawl"),
+	); err != nil {
+		log.Fatalf("scheduler register: %v", err)
+	}
+	go func() { _ = asynqScheduler.Run() }()
+
 	srv := queue.NewServer(cfg.RedisURL, cfg.CrawlQueueConc, cfg.NormQueueConc)
 	mux := asynq.NewServeMux()
 	queue.RegisterHandlers(mux, map[string]asynq.Handler{
-		scraper.TaskCrawlJob: crawlHandler,
+		scraper.TaskCrawlJob:        crawlHandler,
+		scraper.TaskNormaliseReview: normHandler,
+		scraper.TaskSmokeRunAll:     smokeHandler,
 	})
 
 	go func() {
@@ -79,10 +110,19 @@ func main() {
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		<-sig
 		cancel()
+		asynqScheduler.Shutdown()
 		srv.Shutdown()
 	}()
 
 	if err := srv.Run(mux); err != nil {
 		log.Fatalf("worker: %v", err)
 	}
+}
+
+func mustLoadLocation(name string) *time.Location {
+	loc, err := time.LoadLocation(name)
+	if err != nil {
+		log.Fatalf("time zone %s: %v", name, err)
+	}
+	return loc
 }
