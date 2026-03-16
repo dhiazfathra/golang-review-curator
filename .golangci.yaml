@@ -2,7 +2,7 @@ run:
   timeout: 5m
   go: "1.22"
 
-version: 2
+version: "2"
 
 linters:
   enable:
@@ -13,24 +13,23 @@ linters:
     - bodyclose
     - contextcheck
 
+  exclusions:
+    rules:
+      - path: "_test.go"
+        linters: [errcheck]
+      - path: "cmd/"
+        linters: [gocritic]
+      - linters: [gocritic]
+        text: "exitAfterDefer"
+
   settings:
     gocritic:
       disabled-checks:
         - exitAfterDefer
-  exhaustive:
-    default-signifies-exhaustive: false
-    check-generated: false
+    exhaustive:
+      default-signifies-exhaustive: false
 
 formatters:
   enable:
     - gofmt
     - goimports
-
-issues:
-  exclude-rules:
-    - path: "_test.go"
-      linters: [errcheck]
-    - path: "cmd/"
-      linters: [gocritic]
-    - linters: [gocritic]
-      text: "exitAfterDefer"
