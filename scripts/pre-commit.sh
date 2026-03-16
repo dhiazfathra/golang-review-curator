@@ -55,7 +55,7 @@ echo "── pre-commit hooks ──"
 CHANGED_GO_FILES=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go' || true)
 CHANGED_PKGS=""
 if [[ -n "$CHANGED_GO_FILES" ]]; then
-  CHANGED_PKGS=$(echo "$CHANGED_GO_FILES" | xargs -I{} dirname {} | sort -u | sed 's|^|./|')
+  CHANGED_PKGS=$(echo "$CHANGED_GO_FILES" | xargs -I{} dirname {} | sort -u | sed 's|^|./|' | grep -v '^./tests/integration$')
 fi
 
 # Get changed SQL files

@@ -48,19 +48,43 @@ func (s *E2ESuite) TestFullCrawlNormalisePipeline() {
 func (s *E2ESuite) TestDeduplication() {
 	dedupeHash := "test_hash_123"
 
+	var jobID string
+	_ = s.DB.Get(&jobID, `
+		INSERT INTO crawl_jobs (id, platform, product_url, product_id, max_pages, retry_count, status, enqueued_at)
+		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)
+		RETURNING id
+	`, "shopee", "https://shopee.co.id/test", "prod123", 1, 0, "pending", time.Now())
+	s.NotEmpty(jobID)
+
+	s.DB.MustExec(`
+		INSERT INTO raw_reviews (id, job_id, platform, product_url, payload, dedupe_hash)
+		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)
+	`, jobID, "shopee", "https://shopee.co.id/test", "{}", dedupeHash+"_raw")
+
+	var rawID1 string
+	_ = s.DB.Get(&rawID1, "SELECT id FROM raw_reviews WHERE dedupe_hash = $1", dedupeHash+"_raw")
+
 	_, err := s.DB.Exec(`
 		INSERT INTO normalised_reviews (id, raw_review_id, platform, product_id, author_id, 
 			author_name, rating, review_text, language, reviewed_at, normalised_at, dedupe_hash)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-	`, "uuid1", "raw-uuid-1", "shopee", "prod123", "author1", "Test User",
+		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	`, rawID1, "shopee", "prod123", "author1", "Test User",
 		5, "Great product!", "en", time.Now(), time.Now(), dedupeHash)
 	s.NoError(err)
+
+	s.DB.MustExec(`
+		INSERT INTO raw_reviews (id, job_id, platform, product_url, payload, dedupe_hash)
+		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)
+	`, jobID, "shopee", "https://shopee.co.id/test", "{}", dedupeHash+"_raw2")
+
+	var rawID2 string
+	_ = s.DB.Get(&rawID2, "SELECT id FROM raw_reviews WHERE dedupe_hash = $1", dedupeHash+"_raw2")
 
 	_, _ = s.DB.Exec(`
 		INSERT INTO normalised_reviews (id, raw_review_id, platform, product_id, author_id, 
 			author_name, rating, review_text, language, reviewed_at, normalised_at, dedupe_hash)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-	`, "uuid2", "raw-uuid-2", "shopee", "prod123", "author1", "Test User",
+		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	`, rawID2, "shopee", "prod123", "author1", "Test User",
 		5, "Great product!", "en", time.Now(), time.Now(), dedupeHash)
 
 	var count int
@@ -70,13 +94,14 @@ func (s *E2ESuite) TestDeduplication() {
 }
 
 func (s *E2ESuite) TestCrawlJobWorkflow() {
-	jobID := "test-job-123"
-
-	_, err := s.DB.Exec(`
+	var jobID string
+	err := s.DB.Get(&jobID, `
 		INSERT INTO crawl_jobs (id, platform, product_url, product_id, max_pages, retry_count, status, enqueued_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	`, jobID, "shopee", "https://shopee.co.id/test", "12345", 1, 0, "pending", time.Now())
+		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)
+		RETURNING id
+	`, "shopee", "https://shopee.co.id/test", "12345", 1, 0, "pending", time.Now())
 	s.Require().NoError(err)
+	s.NotEmpty(jobID)
 
 	var count int
 	err = s.DB.Get(&count, "SELECT COUNT(*) FROM crawl_jobs WHERE id = $1", jobID)

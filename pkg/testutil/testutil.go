@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -36,7 +37,9 @@ func (s *E2ETestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.DB = db
 
-	err = goose.Up(db.DB, "migrations")
+	wd, err := os.Getwd()
+	s.Require().NoError(err)
+	err = goose.Up(db.DB, filepath.Join(wd, "..", "..", "migrations"))
 	s.Require().NoError(err)
 
 	redisURL := os.Getenv("REDIS_URL")
@@ -92,7 +95,12 @@ func SetupTestDB(t interface{ Helper() }) (func(), *sqlx.DB, error) {
 		return nil, nil, err
 	}
 
-	err = goose.Up(db.DB, "migrations")
+	wd, err := os.Getwd()
+	if err != nil {
+		_ = db.Close()
+		return nil, nil, err
+	}
+	err = goose.Up(db.DB, filepath.Join(wd, "..", "..", "migrations"))
 	if err != nil {
 		_ = db.Close()
 		return nil, nil, err

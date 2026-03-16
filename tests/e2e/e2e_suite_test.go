@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/hibiken/asynq"
@@ -36,7 +37,9 @@ func (s *E2ESuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.DB = db
 
-	err = goose.Up(db.DB, "migrations")
+	wd, err := os.Getwd()
+	s.Require().NoError(err)
+	err = goose.Up(db.DB, filepath.Join(wd, "..", "..", "migrations"))
 	s.Require().NoError(err)
 
 	redisURL := os.Getenv("REDIS_URL")

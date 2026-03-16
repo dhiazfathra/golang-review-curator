@@ -24,6 +24,10 @@ test-race:
 test-cover:
 	go test -cover ./...
 
+test-coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out | tail -1
+
 lint:
 	golangci-lint run ./...
 
